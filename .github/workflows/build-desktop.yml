@@ -1,0 +1,101 @@
+name: Build Hermes Desktop
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Hermes-Agent release tag (e.g. v2026.6.19). Leave empty for latest."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - name: Resolve tag
+        id: resolve
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG=$(curl -fsSL https://api.github.com/repos/NousResearch/hermes-agent/releases/latest | jq -r '.tag_name')
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Building from tag: $TAG"
+
+  build:
+    needs: resolve
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: win
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: NousResearch/hermes-agent
+          ref: ${{ needs.resolve.outputs.tag }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        shell: bash
+        run: npm ci --ignore-scripts
+
+      - name: Build Desktop (pack)
+        shell: bash
+        run: cd apps/desktop && npm run pack
+
+      - name: List artifacts
+        shell: bash
+        run: find apps/desktop/release -type f 2>/dev/null | head -30
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hermes-desktop-${{ matrix.platform }}
+          path: |
+            apps/desktop/release/**/*.dmg
+            apps/desktop/release/**/*.zip
+            apps/desktop/release/**/*.AppImage
+            apps/desktop/release/**/*.deb
+            apps/desktop/release/**/*.rpm
+            apps/desktop/release/**/*.exe
+            apps/desktop/release/**/*.msi
+            apps/desktop/release/**/Hermes-*/
+          if-no-files-found: warn
+
+  publish:
+    needs: [resolve, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: List downloaded
+        run: find artifacts/ -type f | head -50
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-${{ needs.resolve.outputs.tag }}
+          name: "Hermes Desktop — ${{ needs.resolve.outputs.tag }}"
+          draft: true
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
