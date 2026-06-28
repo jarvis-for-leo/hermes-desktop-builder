@@ -60,24 +60,11 @@ jobs:
         shell: bash
         run: cd apps/desktop && npm run pack
 
-      - name: Compress artifacts
-        shell: bash
-        run: |
-          cd apps/desktop/release
-          for dir in */; do
-            if [ -d "$dir" ]; then
-              name="${dir%/}"
-              tar czf "${name}.tar.gz" "$dir"
-              echo "Created ${name}.tar.gz"
-            fi
-          done
-          ls -lh *.tar.gz 2>/dev/null || echo "No directories to compress"
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: hermes-desktop-${{ matrix.platform }}
-          path: apps/desktop/release/*.tar.gz
+          path: apps/desktop/release/
           if-no-files-found: error
 
   publish:
@@ -91,8 +78,15 @@ jobs:
           pattern: hermes-desktop-*
           merge-multiple: true
 
-      - name: List downloaded
-        run: ls -lh artifacts/
+      - name: Compress for Release
+        run: |
+          cd artifacts
+          for dir in */; do
+            [ -d "$dir" ] || continue
+            name="${dir%/}"
+            tar czf "${name}.tar.gz" "$dir"
+          done
+          ls -lh *.tar.gz
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
