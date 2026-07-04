@@ -57,7 +57,7 @@ jobs:
             dist_cmd: npm run dist
           - os: ubuntu-latest
             platform: linux
-            dist_cmd: npm run dist:linux -- --target AppImage
+            dist_cmd: npm run builder -- --linux AppImage
           - os: windows-latest
             platform: win
             dist_cmd: npm run dist
