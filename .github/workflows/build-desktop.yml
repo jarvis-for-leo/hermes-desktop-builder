@@ -7,6 +7,8 @@ on:
         description: "Hermes-Agent release tag (e.g. v2026.6.19). Leave empty for latest."
         required: false
         default: ""
+  schedule:
+    - cron: "0 0 * * *"  # Daily at midnight UTC
 
 permissions:
   contents: write
@@ -16,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
+      should_build: ${{ steps.resolve.outputs.should_build }}
     steps:
       - name: Resolve tag
         id: resolve
@@ -25,10 +28,26 @@ jobs:
             TAG=$(curl -fsSL https://api.github.com/repos/NousResearch/hermes-agent/releases/latest | jq -r '.tag_name')
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          
+          # Check if we should build (manual trigger or new tag)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          else
+            # Check last built tag from releases
+            LAST_BUILT=$(curl -fsSL https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name // empty' | sed 's/^desktop-//')
+            if [ "$TAG" = "$LAST_BUILT" ]; then
+              echo "should_build=false" >> "$GITHUB_OUTPUT"
+              echo "Already built $TAG, skipping."
+            else
+              echo "should_build=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+          
           echo "Building from tag: $TAG"
 
   build:
     needs: resolve
+    if: needs.resolve.outputs.should_build == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +88,7 @@ jobs:
 
   publish:
     needs: [resolve, build]
+    if: needs.resolve.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
