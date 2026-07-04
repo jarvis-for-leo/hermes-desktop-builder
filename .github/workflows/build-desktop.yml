@@ -104,10 +104,9 @@ jobs:
       - name: Compress for Release
         run: |
           cd artifacts
-          for dir in */; do
-            [ -d "$dir" ] || continue
-            name="${dir%/}"
-            tar czf "${name}.tar.gz" "$dir"
+          for f in *.AppImage *.dmg *.exe *.msi *.zip; do
+            [ -f "$f" ] || continue
+            tar czf "${f}.tar.gz" "$f"
           done
           ls -lh *.tar.gz
 
