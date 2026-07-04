@@ -113,7 +113,7 @@ jobs:
         with:
           tag_name: desktop-${{ needs.resolve.outputs.tag }}
           name: "Hermes Desktop — ${{ needs.resolve.outputs.tag }}"
-          draft: true
+          draft: false
           files: artifacts/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
