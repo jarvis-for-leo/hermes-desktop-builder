@@ -54,10 +54,13 @@ jobs:
         include:
           - os: macos-latest
             platform: mac
+            dist_cmd: npm run dist
           - os: ubuntu-latest
             platform: linux
+            dist_cmd: npm run dist:linux -- --target AppImage
           - os: windows-latest
             platform: win
+            dist_cmd: npm run dist
 
     runs-on: ${{ matrix.os }}
 
@@ -77,7 +80,7 @@ jobs:
 
       - name: Build Desktop (dist)
         shell: bash
-        run: cd apps/desktop && npm run dist
+        run: cd apps/desktop && ${{ matrix.dist_cmd }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
