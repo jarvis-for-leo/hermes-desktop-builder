@@ -75,9 +75,9 @@ jobs:
         shell: bash
         run: npm ci --ignore-scripts
 
-      - name: Build Desktop (pack)
+      - name: Build Desktop (dist)
         shell: bash
-        run: cd apps/desktop && npm run pack
+        run: cd apps/desktop && npm run dist
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
