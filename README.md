@@ -18,6 +18,15 @@ scoop update hermes-desktop
 
 The release workflow refreshes the Scoop manifest from the latest published Windows x64 ZIP and its SHA-256 digest.
 
+### Where Hermes keeps your data
+
+The manifest defines no `persist` entries because Hermes writes outside the directory Scoop replaces on upgrade:
+
+- `%APPDATA%\Hermes` — saved gateway connections, window state, update settings.
+- `%LOCALAPPDATA%\hermes` — config, sessions, and the agent checkout the app installs on first run.
+
+`scoop uninstall hermes-desktop` removes only the app directory, so both folders survive. Delete them yourself for a clean reinstall. The app's own updater maintains the agent checkout; `scoop update` updates the desktop app.
+
 ## Build from an upstream tag
 
 1. Go to **Actions** → **Build Hermes Desktop** → **Run workflow**.
