@@ -144,6 +144,8 @@ jobs:
           fi
           if [ "$PLATFORM" = linux ]; then
             BUILDER_ARGS+=(--linux AppImage)
+          elif [ "$PLATFORM" = win ] && jq -e '.scripts | has("dist:win:msix")' package.json > /dev/null; then
+            BUILDER_ARGS+=(--win msix zip)
           fi
 
           "$PACKAGE_MANAGER" run build
