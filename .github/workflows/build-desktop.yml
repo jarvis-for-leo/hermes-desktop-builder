@@ -105,6 +105,12 @@ jobs:
             npm ci --ignore-scripts
           fi
 
+      - uses: actions/setup-python@v6
+        if: matrix.platform == 'mac' && steps.toolchain.outputs.package_manager == 'pnpm'
+        id: python
+        with:
+          python-version: '3.12'
+
       - name: Install Linux native build dependencies
         if: matrix.platform == 'linux'
         run: |
@@ -118,21 +124,20 @@ jobs:
           PACKAGE_MANAGER: ${{ steps.toolchain.outputs.package_manager }}
           PLATFORM: ${{ matrix.platform }}
           UPSTREAM_TAG: ${{ needs.resolve.outputs.tag }}
+          HERMES_PYTHON: ${{ steps.python.outputs.python-path }}
         run: |
           # The desktop build embeds the upstream commit in the installer.
           export GITHUB_SHA="$(git rev-parse HEAD)"
           export GITHUB_REF_NAME="$UPSTREAM_TAG"
 
-          BUILDER_ARGS=(--publish never)
-          if [ "$PLATFORM" = linux ]; then
-            BUILDER_ARGS+=(--linux AppImage)
-          fi
-
-          "$PACKAGE_MANAGER" run build
-          if [ "$PACKAGE_MANAGER" = pnpm ]; then
-            pnpm run builder "${BUILDER_ARGS[@]}"
+          if [ "$PLATFORM" != linux ]; then
+            "$PACKAGE_MANAGER" run dist
+          elif [ "$PACKAGE_MANAGER" = pnpm ]; then
+            pnpm run build
+            pnpm run builder --linux AppImage
           else
-            npm run builder -- "${BUILDER_ARGS[@]}"
+            npm run build
+            npm run builder -- --linux AppImage
           fi
 
       - name: Upload installers
