@@ -1,0 +1,65 @@
+name: Update Scoop Manifest
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    concurrency:
+      group: scoop-manifest-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Sync the Windows ZIP from the latest release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          MANIFEST=bucket/hermes-desktop.json
+          ASSET=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" | jq -c '
+            [.assets[] | select(.state == "uploaded" and (.name | test("^Hermes-[0-9]+[.][0-9]+[.][0-9]+-win-x64[.]zip$")))]
+            | if length > 1 then error("Expected at most one Windows x64 ZIP") else .[0] end')
+          if [ "$ASSET" = null ]; then
+            echo "The latest release has no stable Windows x64 ZIP."
+            exit 0
+          fi
+
+          NAME=$(jq -er '.name' <<< "$ASSET")
+          VERSION="${NAME#Hermes-}"
+          VERSION="${VERSION%-win-x64.zip}"
+          CURRENT=$(jq -er '.version' "$MANIFEST")
+          if [ "$(printf '%s\n%s\n' "$VERSION" "$CURRENT" | sort -V | head -n 1)" != "$CURRENT" ]; then
+            echo "Keeping Scoop version $CURRENT because the release ZIP is older ($VERSION)."
+            exit 0
+          fi
+
+          URL=$(jq -er '.browser_download_url' <<< "$ASSET")
+          if ! HASH=$(jq -er '.digest // "" | select(test("^sha256:[0-9a-f]{64}$")) | ltrimstr("sha256:")' <<< "$ASSET"); then
+            echo "::error::The published Windows ZIP is missing a SHA-256 digest."
+            exit 1
+          fi
+          jq --arg version "$VERSION" --arg url "$URL" --arg hash "$HASH" '
+            .version = $version | .architecture["64bit"] = {url: $url, hash: $hash}
+          ' "$MANIFEST" > "$MANIFEST.tmp"
+          mv "$MANIFEST.tmp" "$MANIFEST"
+
+          if git diff --quiet -- "$MANIFEST"; then
+            echo "Scoop already points to $NAME."
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$MANIFEST"
+          git commit -m "Update Scoop manifest to $VERSION"
+          git push origin "HEAD:refs/heads/$DEFAULT_BRANCH"

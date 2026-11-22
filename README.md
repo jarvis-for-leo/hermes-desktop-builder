@@ -2,7 +2,23 @@
 
 GitHub Action that builds [Hermes Desktop](https://github.com/NousResearch/hermes-agent) app from source for macOS, Linux, and Windows.
 
-## Usage
+## Install with Scoop (Windows x64)
+
+```powershell
+scoop bucket add hermes-builder https://github.com/jarvis-for-leo/hermes-desktop-builder
+scoop install hermes-builder/hermes-desktop
+```
+
+Open **Hermes Desktop** from the Start menu. Close it before upgrading.
+
+```powershell
+scoop update
+scoop update hermes-desktop
+```
+
+The release workflow refreshes the Scoop manifest from the latest published Windows x64 ZIP and its SHA-256 digest.
+
+## Build from an upstream tag
 
 1. Go to **Actions** → **Build Hermes Desktop** → **Run workflow**.
 2. Enter a release tag (for example, `v0.23.3`) or leave it empty to build the latest release.

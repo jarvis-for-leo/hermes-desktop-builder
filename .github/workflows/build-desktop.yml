@@ -190,3 +190,12 @@ jobs:
           files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sync-scoop:
+    needs: [resolve, publish]
+    if: >-
+      !cancelled() && needs.resolve.result == 'success' &&
+      (needs.publish.result == 'success' || needs.resolve.outputs.should_build == 'false')
+    permissions:
+      contents: write
+    uses: ./.github/workflows/update-scoop.yml
