@@ -130,15 +130,27 @@ jobs:
           export GITHUB_SHA="$(git rev-parse HEAD)"
           export GITHUB_REF_NAME="$UPSTREAM_TAG"
 
-          if [ "$PLATFORM" != linux ]; then
-            "$PACKAGE_MANAGER" run dist
-          elif [ "$PACKAGE_MANAGER" = pnpm ]; then
-            pnpm run build
-            pnpm run builder --linux AppImage
-          else
-            npm run build
-            npm run builder -- --linux AppImage
+          BUILDER_ARGS=()
+          DESKTOP_VERSION=$(jq -er '.version' package.json)
+          if [ "$DESKTOP_VERSION" = 0.0.0 ]; then
+            # Newer upstream tags use a placeholder until packaging assigns a version.
+            VERSION="${UPSTREAM_TAG#v}"
+            if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ || "$VERSION" = 0.0.0 ]]; then
+              echo "::error::Cannot derive a desktop version from tag $UPSTREAM_TAG"
+              exit 1
+            fi
+            export HERMES_PAYLOAD_VERSION="$VERSION"
+            BUILDER_ARGS+=("-c.extraMetadata.version=$VERSION")
           fi
+          if [ "$PLATFORM" = linux ]; then
+            BUILDER_ARGS+=(--linux AppImage)
+          fi
+
+          "$PACKAGE_MANAGER" run build
+          if [ "$PACKAGE_MANAGER" = npm ] && [ "${#BUILDER_ARGS[@]}" -gt 0 ]; then
+            BUILDER_ARGS=(-- "${BUILDER_ARGS[@]}")
+          fi
+          "$PACKAGE_MANAGER" run builder "${BUILDER_ARGS[@]}"
 
       - name: Upload installers
         uses: actions/upload-artifact@v4
