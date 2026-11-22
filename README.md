@@ -4,19 +4,19 @@ GitHub Action that builds [Hermes Desktop](https://github.com/NousResearch/herme
 
 ## Usage
 
-1. Push this repo to GitHub
-2. Go to **Actions** → **Build Hermes Desktop** → **Run workflow**
-3. Enter a release tag (e.g. `v2026.6.19`) or leave empty for latest
-4. Download the built app from the resulting draft Release
+1. Go to **Actions** → **Build Hermes Desktop** → **Run workflow**.
+2. Enter a release tag (for example, `v0.23.3`) or leave it empty to build the latest release.
+3. Download the installer from the resulting GitHub Release.
 
 ## What it does
 
-- Clones `NousResearch/hermes-agent` at the specified tag
-- Builds the Electron desktop app (`npm run pack`)
-- Uploads platform-specific artifacts (dmg/zip/AppImage/deb/rpm/exe/msi) to a draft GitHub Release
+- Checks out `NousResearch/hermes-agent` at the selected tag.
+- Installs dependencies from the tag’s pnpm or npm lockfile.
+- Builds and packages the desktop app on macOS, Linux, and Windows.
+- Publishes the installers in a GitHub Release named `desktop-<tag>`.
 
-## Notes
+## Output formats
 
-- macOS builds are **not code-signed** (no Apple Developer account). Run `xattr -cr Hermes.app` on first launch.
-- Linux builds produce AppImage, deb, and rpm.
-- Windows builds produce NSIS installer and MSI.
+- macOS builds produce DMG and ZIP files without Developer ID signing or notarization.
+- Linux builds produce an AppImage.
+- Windows builds use the upstream format for the selected tag. Current tags produce unsigned MSIX packages. Older tags may produce NSIS `.exe` and MSI installers.
