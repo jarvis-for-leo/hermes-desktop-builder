@@ -1,12 +1,12 @@
 {
-  "version": "0.23.4",
+  "version": "0.23.5",
   "description": "Hermes Desktop for Windows",
   "homepage": "https://github.com/jarvis-for-leo/hermes-desktop-builder",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/jarvis-for-leo/hermes-desktop-builder/releases/download/desktop-v0.23.4/Hermes-0.23.4-win-x64.zip",
-      "hash": "1a8847bb79c0dfbdd0ca5d66bdbded2d08c41824db564fdae8b0aabbca0fc620"
+      "url": "https://github.com/jarvis-for-leo/hermes-desktop-builder/releases/download/desktop-v0.23.5/Hermes-0.23.5-win-x64.zip",
+      "hash": "7dbe8fe39439ca184dd07df977ac1904a9ee1d286fcd8e3046bf1004f4987d9b"
     }
   },
   "shortcuts": [
